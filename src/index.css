@@ -5,29 +5,113 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
   
-  --color-brand: #4f46e5; /* indigo-600 */
-  --color-brand-light: #eef2ff; /* indigo-50 */
-  --color-brand-dark: #312e81; /* indigo-900 */
-  --color-surface: #f8fafc; /* slate-50 */
-  --color-border-subtle: #f1f5f9; /* slate-100 */
-  --color-border-main: #e2e8f0; /* slate-200 */
+  --color-brand: var(--brand-color, #4f46e5); /* indigo-600 */
+  --color-brand-light: var(--brand-color-light, #eef2ff); /* indigo-50 */
+  --color-brand-dark: var(--brand-color-dark, #312e81); /* indigo-900 */
+  --color-surface: var(--surface-color, #f8fafc); /* slate-50 */
+  --color-border-subtle: var(--border-subtle-color, #f1f5f9); /* slate-100 */
+  --color-border-main: var(--border-main-color, #e2e8f0); /* slate-200 */
+  --color-card: var(--bg-card, #ffffff); /* custom card bg to dynamically support dark mode */
 }
 
 @layer base {
+  :root {
+    --brand-color: #4f46e5;
+    --brand-color-light: #eef2ff;
+    --brand-color-dark: #312e81;
+    --surface-color: #f8fafc;
+    --border-subtle-color: #f1f5f9;
+    --border-main-color: #e2e8f0;
+    --bg-card: #ffffff;
+  }
+  
+  .dark {
+    --surface-color: #0b0c15;          /* premium slate-navy dashboard bg */
+    --brand-color-dark: #121528;       /* deep indigo */
+    --border-subtle-color: #1e2640;    /* dark blue/slate border */
+    --border-main-color: #242f54;      /* slate border */
+    --bg-card: #151930;                /* custom deep bento card background */
+  }
+
   body {
-    @apply bg-surface text-slate-800 font-sans;
+    background-color: var(--surface-color);
+    color: var(--text-main, #334155);
+    @apply font-sans transition-colors duration-300;
     -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4 {
-    @apply font-display tracking-tight text-slate-900;
+    @apply font-display tracking-tight text-slate-900 transition-colors duration-300;
   }
 }
 
+/* Dynamic Class Adaptive Overrides for Dark Mode */
+.dark body {
+  background-color: var(--surface-color) !important;
+  color: #cbd5e1 !important;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-800 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-slate-500 {
+  color: #64748b !important;
+}
+
+.dark .text-slate-700 {
+  color: #94a3b8 !important;
+}
+
+.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .border-border-main {
+  border-color: var(--border-main-color) !important;
+}
+
+.dark .bento-card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-main-color) !important;
+}
+
+/* Modal form inputs & search inputs adaptive overrides in dark mode */
+.dark input, .dark textarea, .dark select {
+  background-color: #1a1e36 !important;
+  border-color: var(--border-main-color) !important;
+  color: #f1f5f9 !important;
+}
+
+.dark input::placeholder, .dark textarea::placeholder {
+  color: #475569 !important;
+}
+
+.dark .glass-morphism {
+  background-color: rgb(21 25 48 / 0.85) !important;
+  border-color: var(--border-main-color) !important;
+}
+
 .bento-card {
-  @apply bg-white border border-border-main rounded-[2rem] shadow-sm overflow-hidden;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-main-color);
+  @apply rounded-[2rem] shadow-sm overflow-hidden;
 }
 
 .glass-morphism {
-  @apply bg-white/80 backdrop-blur-md border-t border-border-main;
+  background-color: rgb(255 255 255 / 0.82);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-main-color);
 }

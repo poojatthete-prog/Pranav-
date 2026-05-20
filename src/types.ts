@@ -8,6 +8,7 @@ export interface Task {
   category: string;
   tags?: string[];
   dueDate?: string;
+  timeframe?: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
 export interface Event {
@@ -19,6 +20,8 @@ export interface Event {
   category: string;
   tags?: string[];
   description?: string;
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+  reminderTime?: 'none' | 'at_time' | '5_min' | '15_min' | '30_min' | '1_hour';
 }
 
 export interface Note {
@@ -28,4 +31,13 @@ export interface Note {
   updatedAt: string;
   tags?: string[];
   color?: string;
+}
+
+export interface LogNotification {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  type: 'info' | 'success' | 'alert';
+  read: boolean;
 }

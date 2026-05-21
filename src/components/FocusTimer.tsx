@@ -106,9 +106,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({ addNotification, showToast }) =
 
   // Utility to append logs both directly on-screen and to the global notification system
   const pushFocusAlert = (message: string, type: 'info' | 'success' | 'alert' | 'tips' = 'info') => {
-    const randomSuffix = Math.random().toString(36).substring(2, 11);
     const newAlert: FocusAlert = {
-      id: `fa-${Date.now()}-${randomSuffix}`,
+      id: `fa-${Date.now()}`,
       message,
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       type

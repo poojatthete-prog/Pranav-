@@ -9,6 +9,7 @@ export interface Task {
   tags?: string[];
   dueDate?: string;
   timeframe?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  completedDate?: string;
 }
 
 export interface Event {

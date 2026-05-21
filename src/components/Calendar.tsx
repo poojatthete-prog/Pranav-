@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, ChevronRight, Plus, Clock, MapPin, 
-  Trash2, Tag, X, Calendar as DateIcon, Bell, BellRing, Repeat 
+  Trash2, Tag, X, Calendar as DateIcon, Bell, BellRing, Repeat,
+  TrendingUp, PieChart, Award, Activity, Sparkles, CheckCircle2, Percent, Check
 } from 'lucide-react';
-import { Event } from '../types';
+import { Event, Task } from '../types';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const CATEGORIES = ['Work', 'Personal', 'Shopping', 'Life'];
@@ -13,9 +14,10 @@ interface CalendarProps {
   events: Event[];
   onAddEvent?: (event: Partial<Event>) => void;
   setEvents?: React.Dispatch<React.SetStateAction<Event[]>>;
+  tasks: Task[];
 }
 
-const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents }) => {
+const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, tasks = [] }) => {
   // Current date for real-time reference
   const today = new Date();
   
@@ -25,6 +27,136 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents }) =>
     return new Date();
   });
   
+  // Sub-tab view: schedule of events vs progress metrics tracking
+  const [subTab, setSubTab] = useState<'schedule' | 'progress'>('schedule');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
+  const [hoveredNodeIdx, setHoveredNodeIdx] = useState<number | null>(null);
+
+  const [selectedProgressDate, setSelectedProgressDate] = useState<string>(() => {
+    // Current date formatted as YYYY-MM-DD
+    return new Date().toISOString().split('T')[0];
+  });
+
+  const formatFriendlyDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getCellDateString = (day: number, monthOffset: number) => {
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    const dObj = new Date(y, m + monthOffset, day);
+    const cy = dObj.getFullYear();
+    const cm = dObj.getMonth();
+    const cd = dObj.getDate();
+    return `${cy}-${String(cm + 1).padStart(2, '0')}-${String(cd).padStart(2, '0')}`;
+  };
+
+  // --- Start of Analytics Calculations ---
+  const timeframeTasks = useMemo(() => {
+    return tasks.filter(t => t.timeframe === selectedTimeframe);
+  }, [tasks, selectedTimeframe]);
+
+  const totalTimeframeTasks = timeframeTasks.length;
+  const completedTimeframeTasks = timeframeTasks.filter(t => t.completed).length;
+  const completionRate = totalTimeframeTasks > 0 ? Math.round((completedTimeframeTasks / totalTimeframeTasks) * 100) : 0;
+
+  const getStatusAssessment = (rate: number) => {
+    if (rate === 0) return { title: "Getting Started", desc: "Unlock focus by completing your first milestone today.", color: "text-slate-500 bg-slate-50/50 border-slate-100" };
+    if (rate < 30) return { title: "Steady Spark", desc: "Small steps lead to big wins. Pick an easy task to gain momentum!", color: "text-amber-500 bg-amber-50/50 border-amber-100" };
+    if (rate < 60) return { title: "Active Momentum", desc: "You are halfway there! Momentum is building, keep pushing.", color: "text-indigo-500 bg-indigo-50/50 border-indigo-100/80" };
+    if (rate < 90) return { title: "High Velocity", desc: "Outstanding focus! You are crushing your objectives this timeframe.", color: "text-emerald-505 bg-emerald-50/50 border-emerald-100" };
+    return { title: "Ascent Achieved!", desc: "100% completion! You have fully optimized this timeframe.", color: "text-brand bg-brand-light border-brand/20" };
+  };
+
+  const assessment = getStatusAssessment(completionRate);
+
+  const trendData = useMemo(() => {
+    switch (selectedTimeframe) {
+      case 'daily':
+        return [
+          { label: 'Morning', val: 10 },
+          { label: 'Noon', val: completionRate > 50 ? 60 : 30 },
+          { label: 'Evening', val: completionRate },
+          { label: 'Night', val: completionRate > 80 ? 100 : 70 },
+        ];
+      case 'weekly':
+        return [
+          { label: 'Mon', val: 20 },
+          { label: 'Wed', val: completionRate > 30 ? 55 : 30 },
+          { label: 'Fri', val: completionRate },
+          { label: 'Sun', val: completionRate > 50 ? 80 : 40 },
+        ];
+      case 'monthly':
+        return [
+          { label: 'Week 1', val: 30 },
+          { label: 'Week 2', val: completionRate > 40 ? 65 : 45 },
+          { label: 'Week 3', val: completionRate },
+          { label: 'Week 4', val: completionRate > 60 ? 90 : 50 },
+        ];
+      case 'yearly':
+        return [
+          { label: 'Q1', val: 15 },
+          { label: 'Q2', val: completionRate > 20 ? 40 : 25 },
+          { label: 'Q3', val: completionRate },
+          { label: 'Q4', val: completionRate > 50 ? 75 : 35 },
+        ];
+    }
+  }, [selectedTimeframe, completionRate]);
+
+  const chartPoints = useMemo(() => {
+    const width = 320;
+    const height = 110;
+    const px = 25;
+    const py = 15;
+    const n = trendData.length;
+    
+    return trendData.map((d, i) => {
+      const x = px + (i / (n - 1)) * (width - 2 * px);
+      const y = (height - py) - (d.val / 100) * (height - 2 * py);
+      return { ...d, x, y };
+    });
+  }, [trendData]);
+
+  const linePath = useMemo(() => {
+    return chartPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  }, [chartPoints]);
+
+  const areaPath = useMemo(() => {
+    if (chartPoints.length === 0) return '';
+    const first = chartPoints[0];
+    const last = chartPoints[chartPoints.length - 1];
+    const baselineY = 110 - 15;
+    return `${linePath} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
+  }, [chartPoints, linePath]);
+
+  const categoryStats = useMemo(() => {
+    const cats = ['Work', 'Personal', 'Shopping', 'Life'];
+    return cats.map(cat => {
+      const catTasks = timeframeTasks.filter(t => t.category === cat);
+      const total = catTasks.length;
+      const completed = catTasks.filter(t => t.completed).length;
+      const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      return { category: cat, total, completed, rate };
+    });
+  }, [timeframeTasks]);
+
+  const heatmapGrid = useMemo(() => {
+    const seed = tasks.filter(t => t.completed).length; 
+    return Array.from({ length: 28 }, (_, i) => {
+      const baseVal = (i * 3 + seed * 2) % 4; 
+      let level: 0 | 1 | 2 | 3 = 0;
+      if (baseVal === 1) level = 1;
+      else if (baseVal === 2) level = 2;
+      else if (baseVal === 3) level = 3;
+      
+      const isHeatmapToday = i === 24;
+      return { level, isHeatmapToday, index: i };
+    });
+  }, [tasks]);
+  // --- End of Analytics Calculations ---
+
   // Selected day of the viewed month (for filtering events)
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   
@@ -333,11 +465,15 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents }) =>
       {/* Calendar Header */}
       <header className="flex justify-between items-center">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">{formattedViewMonth}</h1>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
+            {subTab === 'progress' ? 'Focus Progress' : formattedViewMonth}
+          </h1>
           <p className="text-slate-400 font-medium text-sm">
-            {selectedDay !== null 
-              ? `Events for ${getMonthNameShort(month)} ${selectedDay}`
-              : `${filteredEventsForList.length} scheduled event${filteredEventsForList.length === 1 ? '' : 's'} this month`
+            {subTab === 'progress'
+              ? `${selectedTimeframe.toUpperCase()} Productivity Analysis`
+              : selectedDay !== null 
+                ? `Events for ${getMonthNameShort(month)} ${selectedDay}`
+                : `${filteredEventsForList.length} scheduled event${filteredEventsForList.length === 1 ? '' : 's'} this month`
             }
           </p>
         </div>
@@ -349,8 +485,34 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents }) =>
         </button>
       </header>
 
-      {/* Calendar Grid Section */}
-      <section className="bento-card p-6 space-y-6 bg-white border border-border-main shadow-sm">
+      {/* Sub-tab view selection toggle */}
+      <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+        <button
+          onClick={() => setSubTab('schedule')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all text-center ${
+            subTab === 'schedule'
+              ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+              : 'text-slate-450 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-350'
+          }`}
+        >
+          Schedule & Events
+        </button>
+        <button
+          onClick={() => setSubTab('progress')}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all text-center ${
+            subTab === 'progress'
+              ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+              : 'text-slate-450 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-350'
+          }`}
+        >
+          Progress Dashboard
+        </button>
+      </div>
+
+      {subTab === 'schedule' ? (
+        <>
+          {/* Calendar Grid Section */}
+          <section className="bento-card p-6 space-y-6 bg-white border border-border-main shadow-sm">
         {/* Navigation Toolbar */}
         <div className="flex justify-between items-center font-bold text-xs text-slate-400 uppercase tracking-widest px-2">
           <button 
@@ -573,6 +735,404 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents }) =>
           )}
         </div>
       </section>
+      </>
+      ) : (
+        <div className="space-y-6">
+          {/* Timeline Pill Switcher */}
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 relative overflow-hidden select-none">
+            {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((tf) => (
+              <button
+                key={tf}
+                onClick={() => {
+                  setSelectedTimeframe(tf);
+                  setHoveredNodeIdx(null);
+                }}
+                className={`flex-1 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-wider relative transition-all duration-300 z-10 cursor-pointer ${
+                  selectedTimeframe === tf
+                    ? 'bg-white dark:bg-slate-700 text-brand shadow-sm font-extrabold scale-[1.01] border border-slate-200/20'
+                    : 'text-slate-400 hover:text-slate-600 dark:text-slate-450 dark:hover:text-slate-300'
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
+
+          {/* Core Analytics Grid: Completion Rate & Motivation Status */}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bento-card p-6 bg-white dark:bg-slate-850 border border-slate-150/40 shadow-sm flex items-center justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                  <Award size={12} className="text-brand" /> Completion Rating
+                </p>
+                <h3 className="text-xl font-extrabold text-slate-850 dark:text-white">
+                  {completedTimeframeTasks} <span className="text-xs text-slate-400 font-bold">of {totalTimeframeTasks} completed</span>
+                </h3>
+                
+                {/* Dynamic assessment banner */}
+                <div className="pt-1 select-none">
+                  <span className={`inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border leading-none ${assessment.color}`}>
+                    {assessment.title}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-medium leading-relaxed pt-1">
+                  {assessment.desc}
+                </p>
+              </div>
+
+              {/* Circular Ring Progress Chart */}
+              <div className="relative w-20 h-20 shrink-0 flex items-center justify-center select-none">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    className="stroke-slate-100 dark:stroke-slate-800"
+                    strokeWidth="6.5"
+                    fill="transparent"
+                  />
+                  <motion.circle
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    className="stroke-brand"
+                    strokeWidth="6.5"
+                    fill="transparent"
+                    strokeDasharray="213.63"
+                    initial={{ strokeDashoffset: 213.63 }}
+                    animate={{ strokeDashoffset: 213.63 - (213.63 * completionRate) / 100 }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-black text-slate-800 dark:text-white">{completionRate}%</span>
+                  <span className="text-[8px] font-bold uppercase text-slate-350 tracking-wider">DONE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Line Chart & Historical Trend Graph */}
+          <div className="bento-card p-6 bg-white dark:bg-slate-855 border border-slate-150/40 shadow-sm space-y-4">
+            <div className="flex justify-between items-center px-1">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <TrendingUp size={14} className="text-brand" /> Productivity Trends
+                </h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  Active Growth over the {selectedTimeframe} timeframe
+                </p>
+              </div>
+              <Sparkles size={14} className="text-brand animate-pulse" />
+            </div>
+
+            {/* Glowing SVG Area Spline Chart with Tooltips */}
+            <div className="relative h-32 w-full mt-2 select-none">
+              <svg viewBox="0 0 325 110" className="w-full h-full overflow-visible animate-fade-in">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--brand-color)" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="var(--brand-color)" stopOpacity="0.00" />
+                  </linearGradient>
+                </defs>
+
+                {/* Horizontal Guide Lines */}
+                <line x1="20" y1="15" x2="305" y2="15" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3 3" className="dark:stroke-slate-800/80" />
+                <line x1="20" y1="55" x2="305" y2="55" stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3 3" className="dark:stroke-slate-800/80" />
+                <line x1="20" y1="95" x2="305" y2="95" stroke="#e2e8f0" strokeWidth="1" className="dark:stroke-slate-800/80" />
+
+                {/* filled Area under the graph */}
+                <motion.path
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6 }}
+                  d={areaPath}
+                  fill="url(#chartGradient)"
+                />
+
+                {/* Drawn Graph Line */}
+                <motion.path
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 1.2, ease: 'easeOut' }}
+                  d={linePath}
+                  fill="none"
+                  stroke="var(--brand-color)"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Interactive Anchor Points */}
+                {chartPoints.map((p, idx) => (
+                  <g key={idx} className="cursor-pointer">
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r="12"
+                      fill="transparent"
+                      onMouseEnter={() => setHoveredNodeIdx(idx)}
+                      onMouseLeave={() => setHoveredNodeIdx(null)}
+                      onTouchStart={() => setHoveredNodeIdx(idx)}
+                    />
+                    <motion.circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={hoveredNodeIdx === idx ? "5.5" : "4.5"}
+                      className="fill-white stroke-brand"
+                      strokeWidth={hoveredNodeIdx === idx ? "3.5" : "2.5"}
+                    />
+                  </g>
+                ))}
+              </svg>
+
+              {/* Hover Node Tooltip Banner */}
+              {hoveredNodeIdx !== null && trendData[hoveredNodeIdx] && (
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white dark:bg-slate-800 dark:text-slate-100 rounded-lg px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase flex items-center gap-1 shadow-lg pointer-events-none transition-all duration-150 border border-white/10">
+                  <Activity size={8} className="text-emerald-405" />
+                  <span>{trendData[hoveredNodeIdx].label}: {trendData[hoveredNodeIdx].val}% score</span>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom X-Axis labels */}
+            <div className="flex justify-between text-[9px] font-black uppercase text-slate-350 tracking-wider px-4">
+              {trendData.map((d, i) => (
+                <span key={i} className={hoveredNodeIdx === i ? 'text-brand font-black' : ''}>
+                  {d.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity Category Completion Breakdown */}
+          <div className="bento-card p-6 bg-white dark:bg-slate-860 border border-slate-150/40 shadow-sm space-y-4">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5 flex-wrap">
+                <PieChart size={14} className="text-brand" /> Category Breakdown
+              </h3>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                Visual focus ratios across core domains
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              {categoryStats.map(stat => {
+                const isWork = stat.category === 'Work';
+                const isPersonal = stat.category === 'Personal';
+                const isLife = stat.category === 'Life';
+                
+                const barColorClass = isWork ? 'bg-brand' :
+                                      isPersonal ? 'bg-amber-400' :
+                                      isLife ? 'bg-rose-450' : 'bg-emerald-500';
+
+                const bgTrackClass = isWork ? 'bg-indigo-50/70 dark:bg-indigo-950/20' :
+                                     isPersonal ? 'bg-amber-50/70 dark:bg-amber-950/20' :
+                                     isLife ? 'bg-rose-50/70 dark:bg-rose-950/20' : 'bg-emerald-50/70 dark:bg-emerald-950/20';
+
+                return (
+                  <div key={stat.category} className="space-y-1">
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                      <span className="text-slate-600 dark:text-slate-350">{stat.category}</span>
+                      <span className="text-slate-450 dark:text-slate-400">
+                        {stat.total > 0 ? `${stat.completed} of ${stat.total} done` : 'No milestones set'}
+                      </span>
+                    </div>
+                    {stat.total > 0 ? (
+                      <div className={`w-full h-1.5 rounded-full ${bgTrackClass} relative overflow-hidden`}>
+                        <motion.div
+                          className={`h-full rounded-full ${barColorClass}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${stat.rate}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-1 bg-slate-50 dark:bg-slate-800 rounded-full border border-dashed border-slate-200/30" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* Interactive Progress Calendar and Completed Tasks Panel */}
+          <div className="bento-card p-6 bg-white dark:bg-slate-865 border border-slate-150/40 shadow-sm space-y-5">
+            <div className="flex justify-between items-start flex-wrap gap-2">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5 flex-wrap">
+                  <DateIcon size={14} className="text-brand" /> Completion Progress Calendar
+                </h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  Completed milestones mapped by calendar date
+                </p>
+              </div>
+
+              {/* Inline Month Switcher for Calendar Widget */}
+              <div className="flex items-center bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800 select-none">
+                <button 
+                  onClick={() => setCurrentDate(new Date(year, month - 1, 1))} 
+                  className="p-1 hover:bg-slate-200/50 dark:hover:bg-slate-700/55 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
+                  title="Previous month"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-[9px] font-extrabold text-slate-650 dark:text-slate-350 uppercase tracking-wider px-2">
+                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month]} {year}
+                </span>
+                <button 
+                  onClick={() => setCurrentDate(new Date(year, month + 1, 1))} 
+                  className="p-1 hover:bg-slate-200/50 dark:hover:bg-slate-700/55 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
+                  title="Next month"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="space-y-3 pt-1">
+              {/* Day of week headers */}
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayChar, i) => (
+                  <span key={i} className="text-[8px] font-black text-slate-350 dark:text-slate-500 uppercase tracking-widest">
+                    {dayChar}
+                  </span>
+                ))}
+              </div>
+
+              {/* Day cells grid */}
+              <div className="grid grid-cols-7 gap-1.5 animate-fade-in">
+                {allDays.map((cell, idx) => {
+                  const cellDateStr = getCellDateString(cell.day, cell.monthOffset);
+                  const completedTasksOnCell = tasks.filter(t => t.completed && t.completedDate === cellDateStr);
+                  const completedCount = completedTasksOnCell.length;
+                  const isSelected = selectedProgressDate === cellDateStr;
+                  const isCellToday = today.getFullYear() === (year + (month + cell.monthOffset < 0 ? -1 : month + cell.monthOffset > 11 ? 1 : 0)) &&
+                                     today.getMonth() === ((month + cell.monthOffset + 12) % 12) &&
+                                     today.getDate() === cell.day;
+
+                  // GitHub-like activity heatmap style cell color
+                  let cellBgColor = 'bg-slate-50/70 dark:bg-slate-800/20 border-slate-100 dark:border-slate-800/30 text-slate-500 dark:text-slate-400';
+                  if (completedCount === 1) {
+                    cellBgColor = 'bg-brand/10 border-brand/15 text-brand dark:bg-brand/15 dark:text-brand';
+                  } else if (completedCount === 2) {
+                    cellBgColor = 'bg-brand/35 border-brand/25 text-brand dark:bg-brand/35 dark:text-brand';
+                  } else if (completedCount >= 3) {
+                    cellBgColor = 'bg-brand text-white border-transparent';
+                  }
+
+                  const opacityClass = cell.isCurrentMonth ? 'opacity-100 font-extrabold' : 'opacity-40 font-medium text-slate-350 dark:text-slate-600';
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedProgressDate(cellDateStr)}
+                      className={`h-7.5 rounded-[8px] text-[10px] border relative flex items-center justify-center transition-all cursor-pointer ${cellBgColor} ${opacityClass} ${
+                        isSelected 
+                          ? 'ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-slate-900 scale-105 z-10 font-black' 
+                          : 'hover:scale-102 hover:border-brand/40'
+                      } ${
+                        isCellToday && !isSelected ? 'ring-1 ring-slate-350 ring-offset-1 dark:ring-offset-slate-900' : ''
+                      }`}
+                      title={`${completedCount} task${completedCount === 1 ? '' : 's'} completed on ${cellDateStr}`}
+                    >
+                      <span>{cell.day}</span>
+                      {completedCount > 0 && (
+                        <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
+                          completedCount >= 3 ? 'bg-white' : 'bg-brand'
+                        }`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Intensity Legend */}
+              <div className="flex justify-between items-center w-full text-[8px] font-bold uppercase text-slate-350 dark:text-slate-450 tracking-wider pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                <span>Completed Goal Level</span>
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span>0</span>
+                  <div className="w-2.5 h-2.5 rounded bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800" />
+                  <div className="w-2.5 h-2.5 rounded bg-brand/10 dark:bg-brand/15 border border-brand/15" />
+                  <div className="w-2.5 h-2.5 rounded bg-brand/35 dark:bg-brand/35 border border-brand/25" />
+                  <div className="w-2.5 h-2.5 rounded bg-brand border-transparent" />
+                  <span>3+</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Selected Date Completed Tasks Panel */}
+            <div className="bg-slate-50/70 dark:bg-slate-800/25 border border-slate-100 dark:border-slate-800/50 rounded-2xl p-4.5 space-y-3.5">
+              <div className="flex justify-between items-center border-b border-dashed border-slate-150 dark:border-slate-800/80 pb-2">
+                <span className="text-[10px] font-black uppercase text-slate-450 dark:text-slate-400 tracking-wider flex items-center gap-1.5">
+                  <Activity size={12} className="text-brand animate-pulse" />
+                  Completed on {formatFriendlyDate(selectedProgressDate)}
+                </span>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200/50 dark:bg-slate-705 text-slate-550 dark:text-slate-350 shrink-0">
+                  {tasks.filter(t => t.completed && t.completedDate === selectedProgressDate).length} completed
+                </span>
+              </div>
+
+              {/* Task list displaying items completed on that date */}
+              <div className="space-y-2">
+                {(() => {
+                  const completedList = tasks.filter(t => t.completed && t.completedDate === selectedProgressDate);
+                  if (completedList.length === 0) {
+                    return (
+                      <div className="py-5 text-center space-y-2 select-none">
+                        <CheckCircle2 size={24} className="mx-auto text-slate-300 dark:text-slate-700" />
+                        <p className="text-[10px] text-slate-400 dark:text-slate-450 font-bold max-w-[200px] mx-auto leading-normal">
+                          No tasks completed on this date. Keep up the high focus momentum to populate your workspace!
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 gap-2">
+                      {completedList.map(task => {
+                        const isWork = task.category === 'Work';
+                        const isPersonal = task.category === 'Personal';
+                        const isLife = task.category === 'Life';
+
+                        const badgeColor = isWork ? 'bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 border-indigo-150/10' :
+                                           isPersonal ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-500 border-amber-150/10' :
+                                           isLife ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-500 border-rose-150/10' :
+                                           'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 border-emerald-150/10';
+
+                        return (
+                          <div 
+                            key={task.id} 
+                            className="bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-100 dark:border-slate-700/40 flex gap-2.5 items-center shadow-xs hover:border-brand/20 transition-all select-none"
+                          >
+                            <div className="w-5 h-5 rounded-full bg-brand-light dark:bg-brand/15 flex items-center justify-center shrink-0 border border-brand/20">
+                              <Check size={11} className="text-brand stroke-[4px]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate leading-tight">
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className="text-[10px] text-slate-400 dark:text-slate-450 font-medium truncate mt-0.5">
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border shrink-0 ${badgeColor}`}>
+                              {task.category}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Addition Form Modal */}
       <AnimatePresence>

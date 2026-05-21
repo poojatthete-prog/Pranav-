@@ -39,6 +39,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   addNotification
 }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [completingTaskIds, setCompletingTaskIds] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
@@ -66,14 +67,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   const longPressTimer = useRef<any>(null);
   const isDragging = useRef(false);
   const hasLongPressed = useRef(false);
-  const justDragged = useRef(false);
 
   const startLongPress = (task: Task) => {
     isDragging.current = false;
     hasLongPressed.current = false;
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      if (!isDragging.current && !justDragged.current) {
+      if (!isDragging.current) {
         setLongPressedTask(task);
         hasLongPressed.current = true;
         if (navigator.vibrate) navigator.vibrate(50);
@@ -268,18 +268,37 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const toggleTask = (id: string, e: MouseEvent) => {
     e.stopPropagation();
-    setTasks(prev => prev.map(t => {
-      if (t.id === id) {
-        const nextCompleted = !t.completed;
-        if (nextCompleted) {
-          addNotification("Task Completed 🎉", `"${t.title}" was marked as completed. Awesome work!`, "success");
-        } else {
-          addNotification("Task Restored 🔄", `"${t.title}" was restored back to active tasks.`, "info");
-        }
-        return { ...t, completed: nextCompleted };
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    if (!task.completed) {
+      setCompletingTaskIds(prev => [...prev, id]);
+      addNotification("Task Completed 🎉", `"${task.title}" was marked as completed. Awesome work!`, "success");
+      if (showToast) {
+        showToast("Task completed!");
       }
-      return t;
-    }));
+      setTimeout(() => {
+        setTasks(prev => prev.map(t => {
+          if (t.id === id) {
+            return { ...t, completed: true, completedDate: new Date().toISOString().split('T')[0] };
+          }
+          return t;
+        }));
+        setCompletingTaskIds(prev => prev.filter(tid => tid !== id));
+      }, 300);
+    } else {
+      addNotification("Task Restored 🔄", `"${task.title}" was restored back to active tasks.`, "info");
+      if (showToast) {
+        showToast("Task marked active");
+      }
+      setTasks(prev => prev.map(t => {
+        if (t.id === id) {
+          const { completedDate, ...rest } = t;
+          return { ...rest, completed: false };
+        }
+        return t;
+      }));
+    }
   };
 
   const handleEditTask = (task: Task) => {
@@ -378,24 +397,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
-                    className="fixed sm:absolute top-[4.75rem] sm:top-auto left-4 right-4 sm:left-auto sm:right-0 sm:w-80 bg-white border border-border-main rounded-[2rem] shadow-2xl p-5 z-50 space-y-4 max-h-[75vh] sm:max-h-96 overflow-hidden flex flex-col"
+                    className="absolute right-0 mt-2 w-80 bg-white border border-border-main rounded-[2rem] shadow-2xl p-5 z-50 space-y-4"
                   >
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100 select-none">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                       <div className="flex items-center gap-2">
                         <Bell size={16} className="text-brand animate-pulse" />
                         <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Aura Notifications</span>
                       </div>
                       {notifications.length > 0 && (
                         <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            clearAllNotifications();
-                          }}
+                          onClick={clearAllNotifications}
                           className="text-[9px] font-bold text-slate-400 hover:text-brand uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           Clear All
@@ -403,16 +414,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                       )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin min-h-0 max-h-64 sm:max-h-80">
+                    <div className="max-h-64 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
                       {notifications.length > 0 ? (
                         notifications.map((notif) => (
                           <div 
                             key={notif.id} 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              markAsRead(notif.id);
-                            }}
+                            onClick={() => markAsRead(notif.id)}
                             className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex gap-3 ${
                               notif.read 
                                 ? 'bg-slate-50/50 border-slate-100' 
@@ -748,84 +755,40 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="space-y-2">
               {categoryTasks.map((task) => (
                 <div key={task.id} className="w-[calc(100%-8px)] mx-auto relative overflow-hidden rounded-[1.25rem] shadow-sm">
-                  {/* Underlay Swipe Info Banner */}
-                  {!task.completed && (
-                    <div className="absolute inset-0 flex items-center pl-4.5 text-white bg-emerald-500 transition-all duration-300">
-                      <CheckCircle2 size={18} className="animate-pulse" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest ml-2">Release to Complete Task</span>
-                    </div>
-                  )}
-
                   <motion.div
-                    layout
                     id={`task-${task.id}`}
-                    drag={task.completed ? false : "x"}
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={{ left: 0, right: 0.45 }}
-                    onDragStart={() => {
-                      isDragging.current = true;
-                      justDragged.current = true;
-                      cancelLongPress();
-                    }}
-                    onDrag={(event, info) => {
-                      isDragging.current = true;
-                      justDragged.current = true;
-                      cancelLongPress();
-                    }}
-                    onDragEnd={(event, info) => {
-                      const isCompleteSwipe = info.offset.x > 80 && !task.completed;
-                      if (isCompleteSwipe) {
-                        cancelLongPress();
-                        toggleTask(task.id, event as any);
-                        if (showToast) {
-                          showToast("Task completed!");
-                        }
-                      }
-
-                      setTimeout(() => {
-                        isDragging.current = false;
-                        setTimeout(() => {
-                          justDragged.current = false;
-                        }, 100);
-                      }, 50);
-                    }}
                     onTouchStart={() => startLongPress(task)}
-                    onTouchMove={cancelLongPress}
                     onTouchEnd={cancelLongPress}
                     onMouseDown={() => startLongPress(task)}
-                    onMouseMove={cancelLongPress}
                     onMouseUp={cancelLongPress}
                     onMouseLeave={cancelLongPress}
-                    onClick={(e) => {
-                      if (isDragging.current || justDragged.current) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        return;
-                      }
+                    onClick={() => {
                       if (hasLongPressed.current) {
                         hasLongPressed.current = false;
                         return;
                       }
-                      handleEditTask(task);
                     }}
-                    className="bg-white py-3 px-3.5 rounded-[1.25rem] border border-border-main flex items-center gap-3 group hover:border-brand/30 transition-all cursor-pointer active:scale-[0.98] relative z-10 select-none w-full"
+                    animate={{
+                      opacity: completingTaskIds.includes(task.id) ? 0 : 1,
+                      scale: completingTaskIds.includes(task.id) ? 0.95 : 1
+                    }}
+                    transition={{ duration: 0.3 }}
+                    className={`bg-white py-3 px-3.5 rounded-[1.25rem] border border-border-main flex items-center gap-3 group hover:border-brand/30 transition-all cursor-pointer active:scale-[0.98] relative z-10 select-none w-full ${
+                      completingTaskIds.includes(task.id) ? 'pointer-events-none' : ''
+                    }`}
                   >
                     <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTask(task.id, e);
-                      }}
-                      className="text-slate-300 group-hover:text-brand transition-colors shrink-0 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-50 cursor-pointer"
-                      title="Mark Complete"
+                      onClick={(e) => toggleTask(task.id, e)}
+                      className="text-slate-300 group-hover:text-brand transition-colors shrink-0"
                     >
-                      {task.completed ? (
+                      {(task.completed || completingTaskIds.includes(task.id)) ? (
                         <CheckCircle2 className="text-brand" size={22} />
                       ) : (
                         <div className="w-5.5 h-5.5 border-2 border-slate-200 rounded-full" />
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <h4 className={`font-bold truncate text-xs sm:text-sm ${task.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                      <h4 className={`font-bold truncate text-xs sm:text-sm ${(task.completed || completingTaskIds.includes(task.id)) ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
                         {task.title}
                       </h4>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -1286,7 +1249,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {longPressedTask.completed ? (
                   <button
                     onClick={() => {
-                      setTasks(prev => prev.map(t => t.id === longPressedTask.id ? { ...t, completed: false } : t));
+                      setTasks(prev => prev.map(t => {
+                        if (t.id === longPressedTask.id) {
+                          const { completedDate, ...rest } = t;
+                          return { ...rest, completed: false };
+                        }
+                        return t;
+                      }));
                       addNotification("Task Restored 🔄", `"${longPressedTask.title}" was restored back to active tasks.`, "info");
                       setLongPressedTask(null);
                       if (showToast) showToast('Task marked active');
@@ -1298,7 +1267,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 ) : (
                   <button
                     onClick={() => {
-                      setTasks(prev => prev.map(t => t.id === longPressedTask.id ? { ...t, completed: true } : t));
+                      setTasks(prev => prev.map(t => t.id === longPressedTask.id ? { ...t, completed: true, completedDate: new Date().toISOString().split('T')[0] } : t));
                       addNotification("Task Completed 🎉", `"${longPressedTask.title}" was marked as completed. Awesome work!`, "success");
                       setLongPressedTask(null);
                       if (showToast) showToast('Task completed!');

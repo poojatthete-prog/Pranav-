@@ -18,21 +18,21 @@ import { AppSection, Task, Event, Note, LogNotification } from './types';
 const INITIAL_TASKS: Task[] = [
   // DAILY: 1 completed, 1 incomplete (Total 2)
   { id: '1', title: 'Complete Aura design system', description: 'Finish the Bento grid layout and color palette.', completed: false, category: 'Work', dueDate: 'Today', tags: ['design', 'ui'], timeframe: 'daily' },
-  { id: '2', title: 'Grocery shopping', description: 'Milk, eggs, bread, and fruits.', completed: true, category: 'Personal', dueDate: 'Today', tags: ['home'], timeframe: 'daily' },
+  { id: '2', title: 'Grocery shopping', description: 'Milk, eggs, bread, and fruits.', completed: true, category: 'Personal', dueDate: 'Today', tags: ['home'], timeframe: 'daily', completedDate: '2026-05-21' },
 
   // WEEKLY: 1 completed, 4 incomplete (Total 5)
   { id: '3', title: 'Review team feedback', description: 'Go through the latest comments on Figma.', completed: false, category: 'Work', dueDate: 'Tomorrow', timeframe: 'weekly' },
   { id: '4', title: 'Clean the workspace', description: 'Organize cables and dust the desk.', completed: false, category: 'Life', dueDate: 'Next Week', timeframe: 'weekly' },
   { id: '5', title: 'Buy new running shoes', description: 'Look for trail running shoes.', completed: false, category: 'Shopping', dueDate: 'Soon', timeframe: 'weekly' },
   { id: 'w1', title: 'Plan outline for product design documentation', description: 'Create draft sections.', completed: false, category: 'Work', dueDate: 'Soon', timeframe: 'weekly' },
-  { id: 'w2', title: 'Weekly design system review', description: 'Align on palette with developers.', completed: true, category: 'Work', dueDate: 'Today', timeframe: 'weekly' },
+  { id: 'w2', title: 'Weekly design system review', description: 'Align on palette with developers.', completed: true, category: 'Work', dueDate: 'Today', timeframe: 'weekly', completedDate: '2026-05-21' },
 
   // MONTHLY: 5 completed, 5 incomplete (Total 10)
-  { id: 'm1', title: 'Publish design system specifications', description: 'Export Figma styles to CSS attributes.', completed: true, category: 'Work', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm2', title: 'Complete Aura prototype validation', description: 'Conduct usability tests with team leaders.', completed: true, category: 'Work', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm3', title: 'Review personal development targets', description: 'Assess Q2 milestones.', completed: true, category: 'Life', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm4', title: 'Renew domain registrations', description: 'Migrate old records to standard provider.', completed: true, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm5', title: 'Read 2 industry books', description: 'Pragmatic Programmer and Designing for Emotion.', completed: true, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly' },
+  { id: 'm1', title: 'Publish design system specifications', description: 'Export Figma styles to CSS attributes.', completed: true, category: 'Work', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-18' },
+  { id: 'm2', title: 'Complete Aura prototype validation', description: 'Conduct usability tests with team leaders.', completed: true, category: 'Work', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-19' },
+  { id: 'm3', title: 'Review personal development targets', description: 'Assess Q2 milestones.', completed: true, category: 'Life', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-20' },
+  { id: 'm4', title: 'Renew domain registrations', description: 'Migrate old records to standard provider.', completed: true, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-15' },
+  { id: 'm5', title: 'Read 2 industry books', description: 'Pragmatic Programmer and Designing for Emotion.', completed: true, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-12' },
   { id: 'm6', title: 'Host the design brainstorming session', description: 'Coordinate Zoom slots and Miro boards.', completed: false, category: 'Work', dueDate: 'This Month', timeframe: 'monthly' },
   { id: 'm7', title: 'Schedule dental check-up', description: 'Regular annual appointment.', completed: false, category: 'Life', dueDate: 'This Month', timeframe: 'monthly' },
   { id: 'm8', title: 'Submit quarterly budget proposal', description: 'Finalize calculations for software licenses.', completed: false, category: 'Work', dueDate: 'This Month', timeframe: 'monthly' },
@@ -40,8 +40,8 @@ const INITIAL_TASKS: Task[] = [
   { id: 'm10', title: 'Order custom print posters', description: 'Classic Swiss design posters.', completed: false, category: 'Shopping', dueDate: 'This Month', timeframe: 'monthly' },
 
   // YEARLY: 2 completed, 10 incomplete (Total 12)
-  { id: 'y1', title: 'Master React next-gen architecture', description: 'Deep dive into server components and compiler optimizations.', completed: true, category: 'Work', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y2', title: 'Establish solid physical conditioning routine', description: 'Build continuous weekly running streaks.', completed: true, category: 'Life', dueDate: 'This Year', timeframe: 'yearly' },
+  { id: 'y1', title: 'Master React next-gen architecture', description: 'Deep dive into server components and compiler optimizations.', completed: true, category: 'Work', dueDate: 'This Year', timeframe: 'yearly', completedDate: '2026-05-05' },
+  { id: 'y2', title: 'Establish solid physical conditioning routine', description: 'Build continuous weekly running streaks.', completed: true, category: 'Life', dueDate: 'This Year', timeframe: 'yearly', completedDate: '2026-05-10' },
   { id: 'y3', title: 'Reduce social media consumption', description: 'Install focus timers and limits.', completed: false, category: 'Life', dueDate: 'This Year', timeframe: 'yearly' },
   { id: 'y4', title: 'Save 15% of annual net income', description: 'Optimize bank accounts and automatic saving transfers.', completed: false, category: 'Personal', dueDate: 'This Year', timeframe: 'yearly' },
   { id: 'y5', title: 'Publish 5 standalone utility tools', description: 'Build and release small open-source products.', completed: false, category: 'Work', dueDate: 'This Year', timeframe: 'yearly' },
@@ -192,9 +192,8 @@ export default function App() {
   });
 
   const addNotification = useCallback((title: string, message: string, type: 'info' | 'success' | 'alert' = 'info') => {
-    const randomSuffix = Math.random().toString(36).substring(2, 11);
     const newNotif: LogNotification = {
-      id: `notif-${Date.now()}-${randomSuffix}`,
+      id: `notif-${Date.now()}`,
       title,
       message,
       time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
@@ -534,6 +533,7 @@ export default function App() {
                   events={events} 
                   onAddEvent={addEvent}
                   setEvents={setEvents}
+                  tasks={tasks}
                 />
               )}
               {activeSection === 'timer' && (

@@ -13,53 +13,12 @@ import FocusTimer from './components/FocusTimer';
 import Notes from './components/Notes';
 import Settings from './components/Settings';
 import LoginPage from './components/LoginPage';
+import SplashAndIntro from './components/SplashAndIntro';
 import { AppSection, Task, Event, Note, LogNotification } from './types';
 
-const INITIAL_TASKS: Task[] = [
-  // DAILY: 1 completed, 1 incomplete (Total 2)
-  { id: '1', title: 'Complete Aura design system', description: 'Finish the Bento grid layout and color palette.', completed: false, category: 'Work', dueDate: 'Today', tags: ['design', 'ui'], timeframe: 'daily' },
-  { id: '2', title: 'Grocery shopping', description: 'Milk, eggs, bread, and fruits.', completed: true, category: 'Personal', dueDate: 'Today', tags: ['home'], timeframe: 'daily', completedDate: '2026-05-21' },
+const INITIAL_TASKS: Task[] = [];
 
-  // WEEKLY: 1 completed, 4 incomplete (Total 5)
-  { id: '3', title: 'Review team feedback', description: 'Go through the latest comments on Figma.', completed: false, category: 'Work', dueDate: 'Tomorrow', timeframe: 'weekly' },
-  { id: '4', title: 'Clean the workspace', description: 'Organize cables and dust the desk.', completed: false, category: 'Life', dueDate: 'Next Week', timeframe: 'weekly' },
-  { id: '5', title: 'Buy new running shoes', description: 'Look for trail running shoes.', completed: false, category: 'Shopping', dueDate: 'Soon', timeframe: 'weekly' },
-  { id: 'w1', title: 'Plan outline for product design documentation', description: 'Create draft sections.', completed: false, category: 'Work', dueDate: 'Soon', timeframe: 'weekly' },
-  { id: 'w2', title: 'Weekly design system review', description: 'Align on palette with developers.', completed: true, category: 'Work', dueDate: 'Today', timeframe: 'weekly', completedDate: '2026-05-21' },
-
-  // MONTHLY: 5 completed, 5 incomplete (Total 10)
-  { id: 'm1', title: 'Publish design system specifications', description: 'Export Figma styles to CSS attributes.', completed: true, category: 'Work', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-18' },
-  { id: 'm2', title: 'Complete Aura prototype validation', description: 'Conduct usability tests with team leaders.', completed: true, category: 'Work', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-19' },
-  { id: 'm3', title: 'Review personal development targets', description: 'Assess Q2 milestones.', completed: true, category: 'Life', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-20' },
-  { id: 'm4', title: 'Renew domain registrations', description: 'Migrate old records to standard provider.', completed: true, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-15' },
-  { id: 'm5', title: 'Read 2 industry books', description: 'Pragmatic Programmer and Designing for Emotion.', completed: true, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly', completedDate: '2026-05-12' },
-  { id: 'm6', title: 'Host the design brainstorming session', description: 'Coordinate Zoom slots and Miro boards.', completed: false, category: 'Work', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm7', title: 'Schedule dental check-up', description: 'Regular annual appointment.', completed: false, category: 'Life', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm8', title: 'Submit quarterly budget proposal', description: 'Finalize calculations for software licenses.', completed: false, category: 'Work', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm9', title: 'Research new home desk options', description: 'Ergonomic or stand-up configurations.', completed: false, category: 'Personal', dueDate: 'This Month', timeframe: 'monthly' },
-  { id: 'm10', title: 'Order custom print posters', description: 'Classic Swiss design posters.', completed: false, category: 'Shopping', dueDate: 'This Month', timeframe: 'monthly' },
-
-  // YEARLY: 2 completed, 10 incomplete (Total 12)
-  { id: 'y1', title: 'Master React next-gen architecture', description: 'Deep dive into server components and compiler optimizations.', completed: true, category: 'Work', dueDate: 'This Year', timeframe: 'yearly', completedDate: '2026-05-05' },
-  { id: 'y2', title: 'Establish solid physical conditioning routine', description: 'Build continuous weekly running streaks.', completed: true, category: 'Life', dueDate: 'This Year', timeframe: 'yearly', completedDate: '2026-05-10' },
-  { id: 'y3', title: 'Reduce social media consumption', description: 'Install focus timers and limits.', completed: false, category: 'Life', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y4', title: 'Save 15% of annual net income', description: 'Optimize bank accounts and automatic saving transfers.', completed: false, category: 'Personal', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y5', title: 'Publish 5 standalone utility tools', description: 'Build and release small open-source products.', completed: false, category: 'Work', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y6', title: 'Improve conversational Spanish fluency', description: '30 hours of conversational practice.', completed: false, category: 'Personal', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y7', title: 'Decorate home office space', description: 'Paint accent walls and install dynamic lighting.', completed: false, category: 'Life', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y8', title: 'Coordinate regional developer conference', description: 'Help manage call-for-proposals and sponsors.', completed: false, category: 'Work', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y9', title: 'Attend 4 premium workshops', description: 'UX research, Figma component structures, and copy-writing.', completed: false, category: 'Work', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y10', title: 'Perform 12 community volunteer sessions', description: 'Aspiration to help out at local shelters.', completed: false, category: 'Life', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y11', title: 'Build clean diversified long-term asset port', description: 'Automate recurring investment goals.', completed: false, category: 'Personal', dueDate: 'This Year', timeframe: 'yearly' },
-  { id: 'y12', title: 'Travel and capture photo series of 3 cities', description: 'Document using analog prime lenses.', completed: false, category: 'Personal', dueDate: 'This Year', timeframe: 'yearly' },
-];
-
-const INITIAL_EVENTS: Event[] = [
-  { id: '1', title: 'Design Review Meeting', time: '10:00 AM', date: 'May 20', location: 'Figma Zoom Room', category: 'Work', tags: ['design', 'ui'] },
-  { id: '2', title: 'Group Yoga & Breathing', time: '02:00 PM', date: 'May 20', location: 'Zen Studio', category: 'Life', tags: ['wellness'] },
-  { id: '3', title: 'Alpha Pitch and Sandbox Demo', time: '11:00 AM', date: 'May 22', location: 'In-office Boardroom', category: 'Work', tags: ['pitch'] },
-  { id: '4', title: 'Weekend Grocery Replenish', time: '09:00 AM', date: 'May 24', location: 'Target & Whole Foods', category: 'Personal', tags: ['home'] },
-];
+const INITIAL_EVENTS: Event[] = [];
 
 const INITIAL_NOTES: Note[] = [
   { id: '1', title: 'Product Vision', content: 'Create a seamless experience for power users who want minimalist tools.', updatedAt: '2h ago', tags: ['vision', 'product'], color: 'indigo' },
@@ -158,9 +117,109 @@ const getAccentConfig = (key: string): { brand: string; light: string; dark: str
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<AppSection>('dashboard');
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [events, setEvents] = useState<Event[]>(INITIAL_EVENTS);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('is_logged_in') === 'true';
+  });
+  const [showSplashAndIntro, setShowSplashAndIntro] = useState<boolean>(() => {
+    return localStorage.getItem('is_logged_in') !== 'true';
+  });
+
+  const [tasks, setTasksState] = useState<Task[]>([]);
+  const [events, setEventsState] = useState<Event[]>([]);
   const [notes, setNotes] = useState<Note[]>(INITIAL_NOTES);
+
+  // Storage key helpers for user-specific data isolation
+  const getTasksStorageKey = (user: any) => user ? `aura_tasks_${user.email}` : 'aura_tasks';
+  const getEventsStorageKey = (user: any) => user ? `aura_events_${user.email}` : 'aura_events';
+
+  // State setters that auto-persist under user-specific local storage keys
+  const setTasks: React.Dispatch<React.SetStateAction<Task[]>> = (value) => {
+    setTasksState((prev) => {
+      const nextTasks = typeof value === 'function' ? value(prev) : value;
+      localStorage.setItem(getTasksStorageKey(currentUser), JSON.stringify(nextTasks));
+      return nextTasks;
+    });
+  };
+
+  const setEvents: React.Dispatch<React.SetStateAction<Event[]>> = (value) => {
+    setEventsState((prev) => {
+      const nextEvents = typeof value === 'function' ? value(prev) : value;
+      localStorage.setItem(getEventsStorageKey(currentUser), JSON.stringify(nextEvents));
+      return nextEvents;
+    });
+  };
+
+  // Auth session sync
+  useEffect(() => {
+    setIsAuthLoading(true);
+    const loggedIn = localStorage.getItem('is_logged_in') === 'true';
+    if (loggedIn) {
+      const savedUserStr = localStorage.getItem('current_user');
+      if (savedUserStr) {
+        try {
+          const user = JSON.parse(savedUserStr);
+          const cleanedEmail = user.email ? user.email.trim().toLowerCase() : '';
+          const storedUsersStr = localStorage.getItem('aura_mock_users') || '{}';
+          const users = JSON.parse(storedUsersStr);
+          if (users[cleanedEmail]) {
+            const enrichedUser = {
+              email: cleanedEmail,
+              uid: cleanedEmail,
+              name: users[cleanedEmail].name || user.name || cleanedEmail.split('@')[0],
+              phone: users[cleanedEmail].phone || user.phone || ''
+            };
+            setCurrentUser(enrichedUser);
+          } else {
+            setCurrentUser(user);
+          }
+        } catch (e) {
+          const fallbackUser = { email: 'user@example.com', uid: 'user@example.com', name: 'Tanaji Shete', phone: '+91 98765 43210' };
+          setCurrentUser(fallbackUser);
+          localStorage.setItem('current_user', JSON.stringify(fallbackUser));
+        }
+      } else {
+        const fallbackUser = { email: 'user@example.com', uid: 'user@example.com', name: 'Tanaji Shete', phone: '+91 98765 43210' };
+        setCurrentUser(fallbackUser);
+        localStorage.setItem('current_user', JSON.stringify(fallbackUser));
+      }
+    } else {
+      setCurrentUser(null);
+    }
+    // Simple mock transition feel
+    const timer = setTimeout(() => {
+      setIsAuthLoading(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [isLoggedIn]);
+
+  // Load correct tasks/events whenever currentUser changes (acts as local database sync/listener)
+  useEffect(() => {
+    const tasksKey = getTasksStorageKey(currentUser);
+    const savedTasks = localStorage.getItem(tasksKey);
+    if (savedTasks) {
+      try {
+        setTasksState(JSON.parse(savedTasks));
+      } catch (e) {
+        setTasksState([]);
+      }
+    } else {
+      setTasksState([]);
+    }
+
+    const eventsKey = getEventsStorageKey(currentUser);
+    const savedEvents = localStorage.getItem(eventsKey);
+    if (savedEvents) {
+      try {
+        setEventsState(JSON.parse(savedEvents));
+      } catch (e) {
+        setEventsState([]);
+      }
+    } else {
+      setEventsState([]);
+    }
+  }, [currentUser]);
 
   const [notifications, setNotifications] = useState<LogNotification[]>(() => {
     const saved = localStorage.getItem('aura_notifications');
@@ -207,21 +266,76 @@ export default function App() {
     localStorage.setItem('aura_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  // User session state
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem('is_logged_in') === 'true';
-  });
-
   const handleLogin = (email: string) => {
-    setIsLoggedIn(true);
+    const cleanedEmail = email.trim().toLowerCase();
+    const storedUsersStr = localStorage.getItem('aura_mock_users') || '{}';
+    let mockUser = { email: cleanedEmail, uid: cleanedEmail, name: cleanedEmail.split('@')[0], phone: '' };
+    try {
+       const users = JSON.parse(storedUsersStr);
+       if (users[cleanedEmail]) {
+         mockUser = {
+           email: cleanedEmail,
+           uid: cleanedEmail,
+           name: users[cleanedEmail].name || cleanedEmail.split('@')[0],
+           phone: users[cleanedEmail].phone || ''
+         };
+       }
+    } catch (e) {
+       console.error(e);
+    }
+    localStorage.setItem('current_user', JSON.stringify(mockUser));
     localStorage.setItem('is_logged_in', 'true');
-    showToast(`Welcome back, ${email.split('@')[0]}!`);
+    setCurrentUser(mockUser);
+    setIsLoggedIn(true);
+    showToast(`Welcome back, ${mockUser.name}!`);
   };
 
   const handleSignOut = () => {
-    setIsLoggedIn(false);
+    localStorage.removeItem('current_user');
     localStorage.setItem('is_logged_in', 'false');
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    setShowSplashAndIntro(true);
     showToast('Signed out successfully');
+  };
+
+  const handleUpdateProfile = (updated: { name: string; email: string; mobile: string }) => {
+    const storedUsersStr = localStorage.getItem('aura_mock_users') || '{}';
+    try {
+      const users = JSON.parse(storedUsersStr);
+      const cleanedOldEmail = currentUser?.email ? currentUser.email.trim().toLowerCase() : '';
+      const cleanedNewEmail = updated.email.trim().toLowerCase();
+
+      if (cleanedOldEmail && cleanedOldEmail !== cleanedNewEmail) {
+        const userPassword = users[cleanedOldEmail]?.password || '123456';
+        delete users[cleanedOldEmail];
+        users[cleanedNewEmail] = {
+          email: cleanedNewEmail,
+          password: userPassword,
+          name: updated.name,
+          phone: updated.mobile
+        };
+      } else if (cleanedNewEmail) {
+        users[cleanedNewEmail] = {
+          ...users[cleanedNewEmail],
+          name: updated.name,
+          phone: updated.mobile,
+          email: cleanedNewEmail
+        };
+      }
+      localStorage.setItem('aura_mock_users', JSON.stringify(users));
+    } catch (e) {
+      console.error("Failed to update user profile in registry", e);
+    }
+
+    const nextUser = {
+      ...currentUser,
+      email: updated.email.trim().toLowerCase(),
+      name: updated.name,
+      phone: updated.mobile,
+    };
+    localStorage.setItem('current_user', JSON.stringify(nextUser));
+    setCurrentUser(nextUser);
   };
 
   // Preference states loaded from localStorage
@@ -507,8 +621,25 @@ export default function App() {
     >
       <main className="h-full">
         <AnimatePresence mode="wait">
-          {!isLoggedIn ? (
-            <LoginPage key="login" onLogin={handleLogin} />
+          {isAuthLoading ? (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center min-h-[40vh] space-y-4 animate-pulse"
+            >
+              <div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+                Harmonizing Aura...
+              </p>
+            </motion.div>
+          ) : !isLoggedIn ? (
+            showSplashAndIntro ? (
+              <SplashAndIntro key="splash-intro" onComplete={() => setShowSplashAndIntro(false)} />
+            ) : (
+              <LoginPage key="login" onLogin={handleLogin} />
+            )
           ) : (
             <>
               {activeSection === 'dashboard' && (
@@ -557,6 +688,8 @@ export default function App() {
                   customColors={customColors}
                   onAddCustomColor={handleAddCustomColor}
                   onSignOut={handleSignOut}
+                  currentUser={currentUser}
+                  onUpdateUser={handleUpdateProfile}
                 />
               )}
             </>

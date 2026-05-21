@@ -13,6 +13,8 @@ interface SettingsProps {
   customColors: string[];
   onAddCustomColor: (hex: string) => void;
   onSignOut: () => void;
+  currentUser?: any;
+  onUpdateUser?: (updated: { name: string; email: string; mobile: string }) => void;
 }
 
 const ACCENT_COLORS = {
@@ -36,14 +38,16 @@ const Settings: React.FC<SettingsProps> = ({
   customColors,
   onAddCustomColor,
   onSignOut,
+  currentUser,
+  onUpdateUser,
 }) => {
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = React.useState(() => {
     return {
-      name: localStorage.getItem('profile_name') || 'Tanaji Shete',
-      email: localStorage.getItem('profile_email') || 'tanajithete@gmail.com',
-      mobile: localStorage.getItem('profile_mobile') || '+91 98765 43210',
+      name: currentUser?.name || localStorage.getItem('profile_name') || 'Tanaji Shete',
+      email: currentUser?.email || localStorage.getItem('profile_email') || 'tanajithete@gmail.com',
+      mobile: currentUser?.phone || localStorage.getItem('profile_mobile') || '+91 98765 43210',
     };
   });
 
@@ -51,6 +55,20 @@ const Settings: React.FC<SettingsProps> = ({
   const [editEmail, setEditEmail] = React.useState(profile.email);
   const [editMobile, setEditMobile] = React.useState(profile.mobile);
   const [isEditingProfile, setIsEditingProfile] = React.useState(false);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      const updated = {
+        name: currentUser.name || currentUser.email?.split('@')[0] || 'Tanaji Shete',
+        email: currentUser.email || 'tanajithete@gmail.com',
+        mobile: currentUser.phone || '',
+      };
+      setProfile(updated);
+      setEditName(updated.name);
+      setEditEmail(updated.email);
+      setEditMobile(updated.mobile);
+    }
+  }, [currentUser]);
 
   // Security and privacy states
   const [isEditingSecurity, setIsEditingSecurity] = React.useState(false);
@@ -112,6 +130,9 @@ const Settings: React.FC<SettingsProps> = ({
     localStorage.setItem('profile_name', updated.name);
     localStorage.setItem('profile_email', updated.email);
     localStorage.setItem('profile_mobile', updated.mobile);
+    if (onUpdateUser) {
+      onUpdateUser(updated);
+    }
     setIsEditingProfile(false);
     showToast('Profile updated successfully');
   };

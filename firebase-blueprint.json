@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A task with optional features",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "category": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "timeframe": { "type": "string" },
+        "completedDate": { "type": "string" }
+      },
+      "required": ["id", "title", "completed", "category"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "A calendar event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "time": { "type": "string" },
+        "date": { "type": "string" },
+        "location": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "recurrence": { "type": "string" },
+        "reminderTime": { "type": "string" }
+      },
+      "required": ["id", "title", "time", "date", "category"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Tasks assigned to a user"
+    },
+    "users/{userId}/events/{eventId}": {
+      "schema": "Event",
+      "description": "Events of a user"
+    }
+  }
+}

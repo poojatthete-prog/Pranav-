@@ -51,13 +51,25 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [activeTaskTab, setActiveTaskTab] = useState<'active' | 'history'>('active');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<LogNotification | null>(null);
 
   const markAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => n.read ? n : { ...n, read: true }));
+    if (showToast) showToast('All notifications marked as read');
+  };
+
   const clearAllNotifications = () => {
     setNotifications([]);
+  };
+
+  const deleteNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    if (showToast) showToast('Notification cleared');
   };
 
   const unreadCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
@@ -89,23 +101,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const TIMEFRAME_DETAILS = useMemo(() => {
-    const getStats = (tf: 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly', fallbackCompleted: number, fallbackTotal: number) => {
+    const getStats = (tf: 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       const filtered = tf === 'all' ? tasks : tasks.filter(t => t.timeframe === tf);
       const total = filtered.length;
       const completed = filtered.filter(t => t.completed).length;
-      
-      const actualTotal = total > 0 ? total : fallbackTotal;
-      const actualCompleted = total > 0 ? completed : fallbackCompleted;
-      const percentage = actualTotal > 0 ? Math.round((actualCompleted / actualTotal) * 100) : 0;
-      
-      return { total: actualTotal, completed: actualCompleted, percentage };
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+      return { total, completed, percentage };
     };
 
-    const daily = getStats('daily', 1, 2);
-    const weekly = getStats('weekly', 1, 5);
-    const monthly = getStats('monthly', 5, 10);
-    const yearly = getStats('yearly', 2, 12);
-    const all = getStats('all', 9, 29);
+    const daily = getStats('daily');
+    const weekly = getStats('weekly');
+    const monthly = getStats('monthly');
+    const yearly = getStats('yearly');
+    const all = getStats('all');
 
     return {
       all: {
@@ -245,19 +253,19 @@ const Dashboard: React.FC<DashboardProps> = ({
     return (Object.values(groupedTasks) as Task[][]).reduce((sum, list) => sum + list.length, 0);
   }, [groupedTasks]);
 
-  const dailyTasks = useMemo(() => tasks.filter(t => t.dueDate === 'Today'), [tasks]);
+  const dailyTasks = useMemo(() => tasks.filter(t => t.timeframe === 'daily' || t.dueDate === 'Today'), [tasks]);
   const dailyCompleted = useMemo(() => dailyTasks.filter(t => t.completed).length, [dailyTasks]);
   const dailyTotal = useMemo(() => dailyTasks.length, [dailyTasks]);
-  const dailyProgress = useMemo(() => dailyTotal > 0 ? Math.round((dailyCompleted / dailyTotal) * 100) : 100, [dailyCompleted, dailyTotal]);
+  const dailyProgress = useMemo(() => dailyTotal > 0 ? Math.round((dailyCompleted / dailyTotal) * 100) : 0, [dailyCompleted, dailyTotal]);
 
-  const weeklyTasks = useMemo(() => tasks, [tasks]);
+  const weeklyTasks = useMemo(() => tasks.filter(t => t.timeframe === 'weekly'), [tasks]);
   const weeklyCompleted = useMemo(() => weeklyTasks.filter(t => t.completed).length, [weeklyTasks]);
   const weeklyTotal = useMemo(() => weeklyTasks.length, [weeklyTasks]);
-  const weeklyProgress = useMemo(() => weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 72, [weeklyCompleted, weeklyTotal]);
+  const weeklyProgress = useMemo(() => weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 0, [weeklyCompleted, weeklyTotal]);
 
-  const monthlyTasksCount = useMemo(() => tasks.length + 5, [tasks]);
-  const monthlyCompletedCount = useMemo(() => tasks.filter(t => t.completed).length + 4, [tasks]);
-  const monthlyProgress = useMemo(() => monthlyTasksCount > 0 ? Math.round((monthlyCompletedCount / monthlyTasksCount) * 100) : 85, [monthlyCompletedCount, monthlyTasksCount]);
+  const monthlyTasksCount = useMemo(() => tasks.filter(t => t.timeframe === 'monthly').length, [tasks]);
+  const monthlyCompletedCount = useMemo(() => tasks.filter(t => t.completed && t.timeframe === 'monthly').length, [tasks]);
+  const monthlyProgress = useMemo(() => monthlyTasksCount > 0 ? Math.round((monthlyCompletedCount / monthlyTasksCount) * 100) : 0, [monthlyCompletedCount, monthlyTasksCount]);
 
   const activeTasksCount = useMemo(() => {
     const filtered = activeTimeframe === 'all'
@@ -366,114 +374,134 @@ const Dashboard: React.FC<DashboardProps> = ({
       exit={{ opacity: 0, y: -20 }}
       className="space-y-5"
     >
-      <header className="flex justify-between items-start relative">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Aura Board</h1>
-          <p className="text-slate-400 font-medium text-sm">{formattedDate}</p>
+      <header className="flex justify-between items-center relative gap-3">
+        <div className="space-y-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight truncate">Aura Board</h1>
+          <p className="text-slate-400 font-medium text-[11px] sm:text-sm truncate">{formattedDate}</p>
         </div>
-        <div className="flex gap-2 items-center relative">
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotifications(prev => !prev)}
-              className="bg-white text-slate-400 p-2.5 rounded-2xl border border-border-main shadow-sm active:scale-95 transition-all relative cursor-pointer"
-              title="Notifications"
-            >
-              <Bell size={20} className={unreadCount > 0 ? "text-brand animate-bounce" : ""} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-0.5 bg-brand text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white select-none">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
+        <div className="flex gap-1.5 sm:gap-2 items-center relative shrink-0">
+          <button 
+            onClick={() => setShowNotifications(prev => !prev)}
+            className="bg-white text-slate-400 p-2 sm:p-2.5 rounded-2xl border border-border-main shadow-sm active:scale-95 transition-all relative cursor-pointer"
+            title="Notifications"
+          >
+            <Bell size={20} className={unreadCount > 0 ? "text-brand animate-bounce" : ""} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-0.5 bg-brand text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white select-none">
+                {unreadCount}
+              </span>
+            )}
+          </button>
 
-            <AnimatePresence>
-              {showNotifications && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowNotifications(false)} 
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-80 bg-white border border-border-main rounded-[2rem] shadow-2xl p-5 z-50 space-y-4"
-                  >
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Bell size={16} className="text-brand animate-pulse" />
-                        <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Aura Notifications</span>
-                      </div>
-                      {notifications.length > 0 && (
-                        <button 
-                          onClick={clearAllNotifications}
-                          className="text-[9px] font-bold text-slate-400 hover:text-brand uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          Clear All
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="max-h-64 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
-                      {notifications.length > 0 ? (
-                        notifications.map((notif) => (
-                          <div 
-                            key={notif.id} 
-                            onClick={() => markAsRead(notif.id)}
-                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex gap-3 ${
-                              notif.read 
-                                ? 'bg-slate-50/50 border-slate-100' 
-                                : 'bg-brand/5 border-brand/10 hover:border-brand/20'
-                            }`}
-                          >
-                            <div className="mt-0.5 shrink-0">
-                              {notif.type === 'success' ? (
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 block" />
-                              ) : notif.type === 'alert' ? (
-                                <span className="w-2 h-2 rounded-full bg-rose-500 block animate-ping" />
-                              ) : (
-                                <span className="w-2 h-2 rounded-full bg-brand block" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h5 className={`text-xs font-bold truncate ${notif.read ? 'text-slate-600' : 'text-slate-800'}`}>
-                                {notif.title}
-                              </h5>
-                              <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-relaxed">
-                                {notif.message}
-                              </p>
-                              <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider block mt-1">
-                                {notif.time}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-8 text-center space-y-2">
-                          <p className="text-slate-300 text-xs font-bold">No active notifications</p>
-                          <p className="text-[9px] text-slate-400 font-medium px-4">Reminders about goals, events, or focus completions appear here.</p>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
           <button 
             onClick={() => setIsCreatingEvent(true)}
-            className="bg-white text-slate-400 p-2.5 rounded-2xl border border-border-main shadow-sm active:scale-95 transition-all cursor-pointer"
+            className="bg-white text-slate-400 p-2 sm:p-2.5 rounded-2xl border border-border-main shadow-sm active:scale-95 transition-all cursor-pointer"
             title="Create Event"
           >
             <CalendarIcon size={20} />
           </button>
           <button 
             onClick={() => setIsCreating(true)}
-            className="bg-brand text-white px-5 py-2.5 rounded-2xl font-bold shadow-lg shadow-brand/20 active:scale-95 transition-all text-sm cursor-pointer"
+            className="bg-brand text-white px-3 py-2.5 sm:px-5 sm:py-2.5 rounded-2xl font-bold shadow-lg shadow-brand/20 active:scale-95 transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap"
           >
             + New Task
           </button>
         </div>
+
+        {/* Repositioned Notifications Panel: Direct child of relative header for viewport-relative right alignment */}
+        <AnimatePresence>
+          {showNotifications && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowNotifications(false)} 
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 top-full mt-2 w-[calc(100vw-3rem)] sm:w-80 bg-white border border-border-main rounded-[2rem] shadow-2xl p-5 z-50 space-y-4"
+              >
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Bell size={16} className="text-brand animate-pulse" />
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Aura Notifications</span>
+                  </div>
+                  {notifications.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={markAllAsRead}
+                        className="text-[9px] font-bold text-slate-400 hover:text-brand uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        Mark as Read
+                      </button>
+                      <span className="text-slate-200 text-[10px] select-none">|</span>
+                      <button 
+                        onClick={clearAllNotifications}
+                        className="text-[9px] font-bold text-slate-400 hover:text-brand uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="max-h-64 overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <div 
+                        key={notif.id} 
+                        onClick={() => {
+                          markAsRead(notif.id);
+                          setSelectedNotification(notif);
+                        }}
+                        className={`p-3 pr-8 rounded-xl border text-left transition-all hover:bg-slate-50/70 dark:hover:bg-slate-900/50 cursor-pointer flex gap-3 relative group ${
+                          notif.read 
+                            ? 'bg-slate-50/50 border-slate-100 dark:border-slate-800/40' 
+                            : 'bg-brand/5 border-brand/10 hover:border-brand/20 dark:bg-brand/10 dark:border-brand/20'
+                        }`}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {notif.type === 'success' ? (
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 block" />
+                          ) : notif.type === 'alert' ? (
+                            <span className="w-2 h-2 rounded-full bg-rose-500 block animate-ping" />
+                          ) : (
+                            <span className="w-2 h-2 rounded-full bg-brand block" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h5 className={`text-xs font-bold truncate ${notif.read ? 'text-slate-600 dark:text-slate-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                            {notif.title}
+                          </h5>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5 leading-relaxed">
+                            {notif.message}
+                          </p>
+                          <span className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block mt-1">
+                            {notif.time}
+                          </span>
+                        </div>
+                        <button
+                          id={`clear-notif-${notif.id}`}
+                          onClick={(e) => deleteNotification(notif.id, e)}
+                          className="absolute right-2 top-2 p-1 text-slate-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center h-6 w-6"
+                          title="Clear Notification"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center space-y-2">
+                      <p className="text-slate-300 text-xs font-bold">No active notifications</p>
+                      <p className="text-[9px] text-slate-400 font-medium px-4">Reminders about goals, events, or focus completions appear here.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </header>
 
       <section className="grid grid-cols-12 gap-3.5">
@@ -834,7 +862,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl relative z-10 space-y-6"
+              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative z-10 max-h-[90vh] sm:max-h-[92vh] overflow-y-auto flex flex-col space-y-5 scrollbar-none"
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800">New Task</h2>
@@ -964,7 +992,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl relative z-10 space-y-6"
+              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative z-10 max-h-[90vh] sm:max-h-[92vh] overflow-y-auto flex flex-col space-y-5 scrollbar-none"
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800">New Event</h2>
@@ -976,7 +1004,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </button>
               </div>
 
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-4 pr-1">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Event Title</label>
                   <input
@@ -1102,7 +1130,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl relative z-10 space-y-6"
+              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative z-10 max-h-[90vh] sm:max-h-[92vh] overflow-y-auto flex flex-col space-y-5 scrollbar-none"
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800">Edit Task</h2>
@@ -1221,6 +1249,91 @@ const Dashboard: React.FC<DashboardProps> = ({
         onAddEvent={onAddEvent}
         onAddNote={onAddNote}
       />
+
+      {/* Detailed Notification Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedNotification(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-950 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative z-10 flex flex-col space-y-5 max-h-[85vh] overflow-y-auto scrollbar-none"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-2xl ${
+                    selectedNotification.type === 'success' 
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500' 
+                      : selectedNotification.type === 'alert' 
+                        ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-500' 
+                        : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500'
+                  }`}>
+                    {selectedNotification.type === 'success' ? (
+                      <CheckCircle2 size={24} />
+                    ) : selectedNotification.type === 'alert' ? (
+                      <AlertCircle size={24} />
+                    ) : (
+                      <Bell size={24} />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">
+                      {selectedNotification.type === 'success' ? 'Milestone' : selectedNotification.type === 'alert' ? 'Priority Alert' : 'System Update'}
+                    </span>
+                    <h3 className="text-sm sm:text-base font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                      {selectedNotification.title}
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="p-1.5 bg-slate-50 dark:bg-slate-850 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded-full transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="py-2 space-y-2">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
+                  {selectedNotification.message}
+                </p>
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950/30 rounded-xl p-3 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                  <span className="font-bold uppercase">Logged at:</span>
+                  <span>{selectedNotification.time}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5 pt-2">
+                <button
+                  id="det-clear"
+                  onClick={(e) => {
+                    deleteNotification(selectedNotification.id, e);
+                    setSelectedNotification(null);
+                  }}
+                  className="bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 py-3 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  Clear Entry
+                </button>
+                <button
+                  id="det-close"
+                  onClick={() => setSelectedNotification(null)}
+                  className="bg-brand dark:bg-brand-light text-white py-3 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Long Press Actions Popover Overlay */}
       <AnimatePresence>

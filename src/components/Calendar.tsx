@@ -179,21 +179,16 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
   }, [timeframeTasks]);
 
   const totalTimeframeTasks = useMemo(() => {
-    const len = timeframeTasks.length;
-    if (len > 0) return len;
-    // Elegant baseline totals for aesthetics
-    switch (selectedTimeframe) {
-      case 'daily': return 3;
-      case 'weekly': return 5;
-      case 'monthly': return 10;
-      case 'yearly': return 12;
-    }
-  }, [timeframeTasks, selectedTimeframe]);
+    return timeframeTasks.length;
+  }, [timeframeTasks]);
 
   const completionRate = totalTimeframeTasks > 0 ? Math.round((completedTimeframeTasks / totalTimeframeTasks) * 100) : 0;
 
   const getStatusAssessment = (rate: number) => {
-    if (rate === 0) return { title: "Getting Started", desc: "Unlock focus by completing your first milestone today.", color: "text-slate-500 bg-slate-50/50 border-slate-100" };
+    if (totalTimeframeTasks === 0) {
+      return { title: "No Tasks", desc: "No tasks set for this timeframe. Add some to get started!", color: "text-slate-500 bg-slate-50/50 border-slate-100" };
+    }
+    if (rate === 0) return { title: "Getting Started", desc: "Unlock focus by completing your first milestone today.", color: "text-slate-500 bg-slate-50/50 border-slate-150" };
     if (rate < 30) return { title: "Steady Spark", desc: "Small steps lead to big wins. Pick an easy task to gain momentum!", color: "text-amber-500 bg-amber-50/50 border-amber-100" };
     if (rate < 60) return { title: "Active Momentum", desc: "You are halfway there! Momentum is building, keep pushing.", color: "text-indigo-500 bg-indigo-50/50 border-indigo-100/80" };
     if (rate < 90) return { title: "High Velocity", desc: "Outstanding focus! You are crushing your objectives this timeframe.", color: "text-emerald-505 bg-emerald-50/50 border-emerald-100" };
@@ -209,10 +204,10 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
         const completedCount = completedDailyList.length;
         if (completedCount === 0) {
           return [
-            { label: 'Morning', val: 10 },
-            { label: 'Noon', val: 15 },
-            { label: 'Evening', val: 12 },
-            { label: 'Night', val: 5 },
+            { label: 'Morning', val: 0 },
+            { label: 'Noon', val: 0 },
+            { label: 'Evening', val: 0 },
+            { label: 'Night', val: 0 },
           ];
         }
         if (completedCount === 1) {
@@ -249,10 +244,10 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
         const maxCountInWeek = Math.max(1, monCount, wedCount, friCount, sunCount);
         const hasAny = completedWeekTasks.length > 0;
         return [
-          { label: 'Mon', val: hasAny ? 10 + Math.round((monCount / maxCountInWeek) * 80) : 20 },
-          { label: 'Wed', val: hasAny ? 15 + Math.round((wedCount / maxCountInWeek) * 80) : 35 },
-          { label: 'Fri', val: hasAny ? 12 + Math.round((friCount / maxCountInWeek) * 80) : 40 },
-          { label: 'Sun', val: hasAny ? 8 + Math.round((sunCount / maxCountInWeek) * 80) : 25 },
+          { label: 'Mon', val: hasAny ? 10 + Math.round((monCount / maxCountInWeek) * 80) : 0 },
+          { label: 'Wed', val: hasAny ? 15 + Math.round((wedCount / maxCountInWeek) * 80) : 0 },
+          { label: 'Fri', val: hasAny ? 12 + Math.round((friCount / maxCountInWeek) * 80) : 0 },
+          { label: 'Sun', val: hasAny ? 8 + Math.round((sunCount / maxCountInWeek) * 80) : 0 },
         ];
       }
       case 'monthly': {
@@ -265,10 +260,10 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
         const maxCountInMonth = Math.max(1, w1Count, w2Count, w3Count, w4Count);
         const hasAny = completedMonthTasks.length > 0;
         return [
-          { label: 'Week 1', val: hasAny ? 10 + Math.round((w1Count / maxCountInMonth) * 80) : 30 },
-          { label: 'Week 2', val: hasAny ? 15 + Math.round((w2Count / maxCountInMonth) * 80) : 45 },
-          { label: 'Week 3', val: hasAny ? 12 + Math.round((w3Count / maxCountInMonth) * 80) : 55 },
-          { label: 'Week 4', val: hasAny ? 8 + Math.round((w4Count / maxCountInMonth) * 80) : 40 },
+          { label: 'Week 1', val: hasAny ? 10 + Math.round((w1Count / maxCountInMonth) * 80) : 0 },
+          { label: 'Week 2', val: hasAny ? 15 + Math.round((w2Count / maxCountInMonth) * 80) : 0 },
+          { label: 'Week 3', val: hasAny ? 12 + Math.round((w3Count / maxCountInMonth) * 80) : 0 },
+          { label: 'Week 4', val: hasAny ? 8 + Math.round((w4Count / maxCountInMonth) * 80) : 0 },
         ];
       }
       case 'yearly': {
@@ -281,10 +276,10 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
         const maxCountInYear = Math.max(1, q1Count, q2Count, q3Count, q4Count);
         const hasAny = completedYearTasks.length > 0;
         return [
-          { label: 'Q1', val: hasAny ? 10 + Math.round((q1Count / maxCountInYear) * 80) : 15 },
-          { label: 'Q2', val: hasAny ? 15 + Math.round((q2Count / maxCountInYear) * 80) : 30 },
-          { label: 'Q3', val: hasAny ? 12 + Math.round((q3Count / maxCountInYear) * 80) : 50 },
-          { label: 'Q4', val: hasAny ? 8 + Math.round((q4Count / maxCountInYear) * 80) : 35 },
+          { label: 'Q1', val: hasAny ? 10 + Math.round((q1Count / maxCountInYear) * 80) : 0 },
+          { label: 'Q2', val: hasAny ? 15 + Math.round((q2Count / maxCountInYear) * 80) : 0 },
+          { label: 'Q3', val: hasAny ? 12 + Math.round((q3Count / maxCountInYear) * 80) : 0 },
+          { label: 'Q4', val: hasAny ? 8 + Math.round((q4Count / maxCountInYear) * 80) : 0 },
         ];
       }
     }
@@ -1354,7 +1349,7 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl relative z-10 space-y-6"
+              className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl relative z-10 max-h-[90vh] sm:max-h-[92vh] overflow-y-auto flex flex-col space-y-5 scrollbar-none"
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -1549,7 +1544,11 @@ const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents, task
                 <button
                   onClick={() => {
                     setEditingEventId(longPressedEvent.id);
-                    setNewEvent({ ...longPressedEvent });
+                    setNewEvent({
+                      recurrence: 'none',
+                      reminderTime: 'none',
+                      ...longPressedEvent
+                    });
                     setIsAddingEvent(true);
                     setLongPressedEvent(null);
                   }}

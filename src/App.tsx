@@ -126,6 +126,11 @@ export default function App() {
     return localStorage.getItem('is_logged_in') !== 'true';
   });
 
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('push_notifications_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+
   const [tasks, setTasksState] = useState<Task[]>([]);
   const [events, setEventsState] = useState<Event[]>([]);
   const [notes, setNotes] = useState<Note[]>(INITIAL_NOTES);
@@ -260,7 +265,37 @@ export default function App() {
       read: false
     };
     setNotifications(prev => [newNotif, ...prev]);
-  }, []);
+
+    // System-level native push notification execution
+    if (typeof window !== 'undefined' && 'Notification' in window && pushNotificationsEnabled) {
+      if (Notification.permission === 'granted') {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+              registration.showNotification(title, {
+                body: message,
+                icon: '/favicon.ico',
+                tag: newNotif.id,
+                vibrate: [100, 50, 100]
+              } as any);
+            }).catch(() => {
+              new Notification(title, {
+                body: message,
+                icon: '/favicon.ico',
+              });
+            });
+          } else {
+            new Notification(title, {
+              body: message,
+              icon: '/favicon.ico',
+            });
+          }
+        } catch (err) {
+          console.warn('Fallback to standard system notification trigger failed:', err);
+        }
+      }
+    }
+  }, [pushNotificationsEnabled]);
 
   useEffect(() => {
     localStorage.setItem('aura_notifications', JSON.stringify(notifications));
@@ -339,10 +374,6 @@ export default function App() {
   };
 
   // Preference states loaded from localStorage
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('push_notifications_enabled');
-    return saved !== null ? saved === 'true' : true;
-  });
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('dark_mode_enabled');
     return saved === 'true';
@@ -590,6 +621,8 @@ export default function App() {
       category: event.category || 'Work',
       tags: event.tags || [],
       description: event.description,
+      recurrence: event.recurrence || 'none',
+      reminderTime: event.reminderTime || 'none',
     };
     setEvents(prev => [newEvent, ...prev]);
   };

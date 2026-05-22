@@ -164,6 +164,11 @@ const Settings: React.FC<SettingsProps> = ({
             const nextVal = !pushNotificationsEnabled;
             setPushNotificationsEnabled(nextVal);
             showToast(`Push notifications ${nextVal ? 'enabled' : 'disabled'}`);
+            if (nextVal && typeof window !== 'undefined' && 'Notification' in window) {
+              if (Notification.permission !== 'granted') {
+                Notification.requestPermission();
+              }
+            }
           }
         },
         { 
@@ -183,8 +188,8 @@ const Settings: React.FC<SettingsProps> = ({
     {
       title: 'Account',
       items: [
-        { icon: User, label: 'Profile Information', color: 'text-indigo-500' },
-        { icon: Shield, label: 'Security & Privacy', color: 'text-indigo-500' },
+        { icon: User, label: 'Profile Information', color: 'text-brand' },
+        { icon: Shield, label: 'Security & Privacy', color: 'text-brand' },
       ]
     },
   ];

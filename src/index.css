@@ -19,18 +19,18 @@
     --brand-color: #4f46e5;
     --brand-color-light: #eef2ff;
     --brand-color-dark: #312e81;
-    --surface-color: #f8fafc;
-    --border-subtle-color: #f1f5f9;
-    --border-main-color: #e2e8f0;
-    --bg-card: #ffffff;
+    --surface-color: #f1f3f9;          /* Slightly deeper off-white to make the glassy background stand out beautifully */
+    --border-subtle-color: rgba(255, 255, 255, 0.45);
+    --border-main-color: rgba(255, 255, 255, 0.55);
+    --bg-card: rgba(255, 255, 255, 0.5); /* Semi-transparent white card */
   }
   
   .dark {
     --surface-color: #0b0c15;          /* premium slate-navy dashboard bg */
     --brand-color-dark: #121528;       /* deep indigo */
-    --border-subtle-color: #1e2640;    /* dark blue/slate border */
-    --border-main-color: #242f54;      /* slate border */
-    --bg-card: #151930;                /* custom deep bento card background */
+    --border-subtle-color: rgba(255, 255, 255, 0.05);
+    --border-main-color: rgba(255, 255, 255, 0.08);
+    --bg-card: rgba(21, 25, 48, 0.55);                /* custom deep bento card background */
   }
 
   body {
@@ -100,18 +100,26 @@
 }
 
 .dark .glass-morphism {
-  background-color: rgb(21 25 48 / 0.85) !important;
+  background-color: var(--bg-card) !important;
   border-color: var(--border-main-color) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
 }
 
 .bento-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-main-color);
-  @apply rounded-[2rem] shadow-sm overflow-hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px 0 rgba(148, 163, 184, 0.08);
+  @apply rounded-[2rem] overflow-hidden transition-all duration-300;
 }
 
 .glass-morphism {
-  background-color: rgb(255 255 255 / 0.82);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border-main-color);
+  background-color: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-main-color);
+  box-shadow: 0 10px 45px -10px rgba(100, 116, 139, 0.12);
 }
